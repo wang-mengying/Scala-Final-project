@@ -12,16 +12,14 @@ import utils.HBaseUtils
 
 import scala.collection.mutable.ListBuffer
 
-class AccidentDAO {
+object AccidentDAO {
   val tableName = "accident"
   val cf = "info"
   val qualifier = "total"
 
-  def save(list:ListBuffer[AccidentCount])={
+  def save(elem:AccidentCount)={
     val table = HBaseUtils.getInstance().getTable(tableName)
-    for (elem <- list) {
-      table.incrementColumnValue(Bytes.toBytes(elem.roadType_speedLimit),Bytes.toBytes(cf),Bytes.toBytes(qualifier),elem.count)
-    }
+    table.incrementColumnValue(Bytes.toBytes(elem.roadType_speedLimit),Bytes.toBytes(cf),Bytes.toBytes(qualifier),elem.count)
   }
 
   def count(roadType_speedLimit:String)={
