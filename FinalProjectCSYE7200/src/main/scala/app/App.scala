@@ -1,6 +1,7 @@
 package app
 import bean.{Accident, Casualty, Vehicle}
 import data.DataCleaning
+import org.apache.log4j.{Level, Logger}
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.spark.ml.feature.VectorAssembler
@@ -13,7 +14,7 @@ import utils.{DataSetGenerator, SparkSessionFactory}
 
 object App {
   def main(args: Array[String]): Unit = {
-//    Logger.getLogger("org").setLevel(Level.OFF)
+    Logger.getLogger("org").setLevel(Level.OFF)
     System.setProperty("hadoop.home.dir", "C:\\Program Files\\Hadoop");
     // Zookeeper host:port, group, kafka topic, threads
     //    if (args.length != 4) {
@@ -38,8 +39,13 @@ object App {
     var accident_train: Dataset[Accident] = DataSetGenerator.trainSetAccidentGen
     var accident_test: Dataset[Accident] = DataSetGenerator.testSetAccidentGen
 
-    joinedTable_test.show(30)
+//    joinedTable_test.show(30)
 //    joinedTable_train.show(30)
+
+    println("joined table train size: " + joinedTable_train.count())
+    println("joined table test size: " + joinedTable_train.count())
+    println("accident train size: " + accident_train.count())
+    println("accident test size: " + accident_test.count())
 
     val streamingData: ReceiverInputDStream[String] = streamingContext.socketTextStream("hadoop000", 9999)
     val input: DStream[Serializable] = streamingData.map(data => DataCleaning.parseData(data))
@@ -52,6 +58,7 @@ object App {
           }
           case accident: Accident => {
             accidentDS = accidentDS.union(Seq(accident).toDS())
+            accident_train = accident_train.union((Seq(accident).toDS()))
           }
           case vehicle: Vehicle => {
             vehicleDS = vehicleDS.union(Seq(vehicle).toDS())
@@ -59,14 +66,19 @@ object App {
             val sql = "select accident_index, accident_severity from accident"
             val accident_serverity: DataFrame = spark.sql(sql)
             joinedTable_train = accident_serverity.join(vehicleDS, "accident_index").join(casualtyDS, "accident_index")
-            accident_serverity.orderBy("accident_index").show(1)
+//            accident_serverity.orderBy("accident_index").show(1)
             println("Data Added")
+            println("joined table train size: " + joinedTable_train.count())
+            println("joined table test size: " + joinedTable_train.count())
+            println("accident train size: " + accident_train.count())
+            println("accident test size: " + accident_test.count())
             // data output - >   new csv. -> dataset
           }
           case _ => println("Data Parsing Failed")
         })
       }
     )
+
     streamingContext.start()
     streamingContext.awaitTermination()
   }
