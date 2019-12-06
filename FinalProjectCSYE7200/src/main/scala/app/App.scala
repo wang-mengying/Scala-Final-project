@@ -27,6 +27,7 @@ import utils.DataSetGenerator.{accidentDS, casualtyDS, spark, vehicleDS}
 
 object App {
   def main(args: Array[String]): Unit = {
+//    Logger.getLogger("org").setLevel(Level.OFF)
     System.setProperty("hadoop.home.dir", "C:\\Program Files\\Hadoop");
 // Zookeeper host:port, group, kafka topic, threads
 //    if (args.length != 4) {
@@ -51,6 +52,9 @@ object App {
     var accident_train: Dataset[Accident] = DataSetGenerator.trainSetAccidentGen
     var accident_test: Dataset[Accident] = DataSetGenerator.testSetAccidentGen
 
+    joinedTable_test.show(30)
+//    joinedTable_train.show(30)
+
     val streamingData: ReceiverInputDStream[String] = streamingContext.socketTextStream("hadoop000", 9999)
     val input: DStream[Serializable] = streamingData.map (data => DataCleaning.parseData(data))
     input.foreachRDD(
@@ -71,6 +75,7 @@ object App {
             joinedTable_train = accident_serverity.join(vehicleDS,"accident_index").join(casualtyDS,"accident_index")
             accident_serverity.orderBy("accident_index").show(1)
             println("Data Added")
+            // data output - >   new csv. -> dataset
           }
           case _ => println("Data Parsing Failed")
         })}
@@ -79,8 +84,10 @@ object App {
     streamingContext.awaitTermination()
   }
 
-
-
+  // training set -> 10行 accident, 10行 casualty 10行vehicle
+//
+def ml = ??? // accident
+def ml2 = ??? // join
 
 
 

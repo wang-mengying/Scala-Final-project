@@ -23,5 +23,6 @@ object Test {
 //    str.split(",").map(_.replaceAll("-","_").replaceAll("\\(","").replaceAll("\\)","").toLowerCase).foreach(println)
     vehicleDS.createOrReplaceTempView("StudentTable")
     spark.sql("select * from StudentTable").show()
+
   }
 }
