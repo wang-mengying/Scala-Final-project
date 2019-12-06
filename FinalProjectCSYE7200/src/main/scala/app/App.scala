@@ -77,7 +77,7 @@ object App {
     streamingContext.awaitTermination()
   }
 
-  def regression(path:String, labelName: String, featuresArray:Array[String] ) = {
+  def regression(path:String, labelName: String, featureArray:Array[String] ) = {
     val spark: SparkSession = SparkSession
       .builder()
       .appName("final")
@@ -94,7 +94,7 @@ object App {
     var data = df.withColumnRenamed(labelName, "label")
 
    // Select features' variable to "features"
-    val featuresArray = featuresArray
+    val featuresArray = featureArray
     val assembler = new VectorAssembler().setInputCols(featuresArray).setOutputCol("features")
 
     // Split training and test data frame for linear regression and decision tree
