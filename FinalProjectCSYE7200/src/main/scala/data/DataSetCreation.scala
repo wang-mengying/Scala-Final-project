@@ -9,7 +9,7 @@ import org.apache.spark.sql.{Dataset, SparkSession}
  */
 
 object DataSetCreation {
-  def getVehicleData(path:String,spark:SparkSession)= {
+  def getVehicleData(path:String,spark:SparkSession): Dataset[Vehicle] = {
     import spark.implicits._
     val rdd: RDD[String] = spark.sparkContext.textFile(path)
     val ds: Dataset[Vehicle] = rdd.map {
@@ -20,7 +20,7 @@ object DataSetCreation {
     }.toDS()
     ds
   }
-  def getCasualtyData(path:String,spark:SparkSession)={
+  def getCasualtyData(path:String,spark:SparkSession): Dataset[Casualty] ={
     import spark.implicits._
     val rdd = spark.sparkContext.textFile(path)
     val ds: Dataset[Casualty] = rdd.map(d => {
@@ -29,7 +29,7 @@ object DataSetCreation {
     }).toDS()
     ds
   }
-  def getAccidentData(path:String,spark:SparkSession)={
+  def getAccidentData(path:String,spark:SparkSession): Dataset[Accident] ={
     import spark.implicits._
     val rdd = spark.sparkContext.textFile(path)
     val ds: Dataset[Accident] = rdd.map(d => {
