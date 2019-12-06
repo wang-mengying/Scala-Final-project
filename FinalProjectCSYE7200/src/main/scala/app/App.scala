@@ -67,6 +67,12 @@ object App {
         })
       }
     )
+    val path_a = "data/Accidents.csv"
+    val path_c = "data/Casualties.csv"
+    val featuresArray_a = Array("Number_of_Vehicles", "Number_of_Casualties", "Day_of_Week", "Road_Type", "Speed_limit", "Junction_Detail", "Junction_Control", "Pedestrian_Crossing-Human_Control", "Pedestrian_Crossing-Physical_Facilities", "Light_Conditions", "Weather_Conditions", "Road_Surface_Conditions", "Special_Conditions_at_Site", "Carriageway_Hazards", "Urban_or_Rural_Area", "Did_Police_Officer_Attend_Scene_of_Accident")
+    val featuresArray_c = Array("Pedestrian_Location", "Pedestrian_Movement", "Car_Passenger", "Pedestrian_Road_Maintenance_Worker", "Casualty_Type")
+    regression(path_a,"Accident_Severity", featuresArray_a)
+    regression(path_c,"Casualty_Class", featuresArray_c)
     streamingContext.start()
     streamingContext.awaitTermination()
   }
@@ -84,20 +90,25 @@ object App {
       .option("inferschema","true")
       .csv(path)
 
+   // Change the name of the predict variable to "label".
     var data = df.withColumnRenamed(labelName, "label")
 
+   // Select features' variable to "features"
     val featuresArray = featuresArray
     val assembler = new VectorAssembler().setInputCols(featuresArray).setOutputCol("features")
 
+    // Split training and test data frame for linear regression and decision tree
     val Array(training_lr, test_lr) = data.randomSplit(Array(0.9, 0.1),12)
     val Array(training_dt, test_dt) = data.randomSplit(Array(0.9, 0.1),12)
 
+    // Set decision tree
     val dt = new DecisionTreeRegressor()
       .setLabelCol("label")
       .setFeaturesCol("features")
       .setMaxBins(64)
       .setMaxDepth(15)
 
+    // Set linear regression
     val lr =new LinearRegression()
       .setFeaturesCol("features")
       .setLabelCol("label")
@@ -106,6 +117,7 @@ object App {
       .setRegParam(0.3)
       .setElasticNetParam(0.8)
 
+    // Train and Prediction
     val pipeline_dt = new Pipeline().setStages(Array(assembler, dt))
     val dtmodel = pipeline_dt.fit(training_dt)
     val predictions_dt = dtmodel.transform(test_dt)
@@ -114,6 +126,7 @@ object App {
     val lrModel = pipeline_lr.fit(training_lr)
     val predictions_lr = lrModel.transform(test_lr)
 
+    // Evaluate Model
     val evaluator =new RegressionEvaluator()
       .setLabelCol("label")
       .setPredictionCol("prediction")
@@ -124,6 +137,7 @@ object App {
     println(matric_lr)
     println(matric_dt)
 
+    // Transform label features to achieve a closer normal distribution
     import org.apache.spark.ml.feature.SQLTransformer
     val sqlTrans = new SQLTransformer().setStatement(
       "SELECT *, SQRT(label) as label1 FROM __THIS__")
@@ -135,6 +149,7 @@ object App {
 
     val pipeline_lr1 = new Pipeline().setStages(Array(assembler,sqlTrans,lr1))
 
+    // Create a parametric grid.
     val paramGrid = new ParamGridBuilder()
       .addGrid(lr1.elasticNetParam, Array(0.0, 0.8, 1.0))
       .addGrid(lr1.regParam,Array(0.1,0.3,0.5))
@@ -146,12 +161,14 @@ object App {
       .setPredictionCol("prediction")
       .setMetricName("rmse")
 
+    // Cross-Validation
     val trainValidation = new TrainValidationSplit()
       .setEstimator(pipeline_lr1)
       .setEvaluator(evaluator_lr1)
       .setEstimatorParamMaps(paramGrid)
       .setTrainRatio(0.8)
 
+    // Train and get best parameters
     val lrModel1 = trainValidation.fit(training_lr)
 
     lrModel1.getEstimatorParamMaps.foreach { println }
