@@ -12,7 +12,7 @@ object SparkSessionFactory {
   def getSparkSession:SparkSession = {
     if(spark == null){
       val conf: SparkConf = new SparkConf().setAppName("CSYE7200FinalProject").set("spark.storage.memoryFraction","0.6").set("spark.shuffle.file.buffer","64")
-        .set( "spark.serializer", "org.apache.spark.serializer.KryoSerializer" ).setMaster("local[*]")
+        .set( "spark.serializer", "org.apache.spark.serializer.KryoSerializer" ).set("spark.shuffle.sort.bypassMergeThreshold","300").setMaster("local[*]")
       spark = SparkSession.builder().config(conf).getOrCreate()
       conf.registerKryoClasses(Array(classOf[Accident],classOf[Casualty],classOf[Vehicle],classOf[scala.collection.mutable.WrappedArray.ofRef[_]]))
     }

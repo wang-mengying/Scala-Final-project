@@ -82,18 +82,13 @@ object App {
     val path_c = "data/Casualties.csv"
     val featuresArray_a = Array("Number_of_Vehicles", "Number_of_Casualties", "Day_of_Week", "Road_Type", "Speed_limit", "Junction_Detail", "Junction_Control", "Pedestrian_Crossing-Human_Control", "Pedestrian_Crossing-Physical_Facilities", "Light_Conditions", "Weather_Conditions", "Road_Surface_Conditions", "Special_Conditions_at_Site", "Carriageway_Hazards", "Urban_or_Rural_Area", "Did_Police_Officer_Attend_Scene_of_Accident")
     val featuresArray_c = Array("Pedestrian_Location", "Pedestrian_Movement", "Car_Passenger", "Pedestrian_Road_Maintenance_Worker", "Casualty_Type")
-    regression(path_a,"Accident_Severity", featuresArray_a)
-    regression(path_c,"Casualty_Class", featuresArray_c)
+    regression(spark,path_a,"Accident_Severity", featuresArray_a)
+    regression(spark,path_c,"Casualty_Class", featuresArray_c)
     streamingContext.start()
     streamingContext.awaitTermination()
   }
 
-  def regression(path:String, labelName: String, featureArray:Array[String] ) = {
-    val spark: SparkSession = SparkSession
-      .builder()
-      .appName("final")
-      .master("local[*]")
-      .getOrCreate()
+  def regression(spark:SparkSession,path:String, labelName: String, featureArray:Array[String] ) = {
 
     val df = spark
       .read
