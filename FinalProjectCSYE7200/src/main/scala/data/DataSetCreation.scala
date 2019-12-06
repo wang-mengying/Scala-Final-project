@@ -12,7 +12,7 @@ object DataSetCreation {
   def getVehicleData(path:String,spark:SparkSession): Dataset[Vehicle] = {
     import spark.implicits._
     val rdd: RDD[String] = spark.sparkContext.textFile(path)
-    val ds: Dataset[Vehicle] = rdd.map {
+    val ds: Dataset[Vehicle] = rdd.map{
       d => {
         val data: Array[String] = d.split(",")
         DataCleaning.parseVehicle(data)
