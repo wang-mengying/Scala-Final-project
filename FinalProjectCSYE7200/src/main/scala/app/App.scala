@@ -71,7 +71,6 @@ object App {
     streamingContext.awaitTermination()
   }
 
-<<<<<<< HEAD
   def regression = {
     val spark: SparkSession = SparkSession
       .builder()
@@ -106,13 +105,6 @@ object App {
       .setMaxIter(20)
       .setRegParam(0.3)
       .setElasticNetParam(0.8)
-=======
-  // training set -> 10行 accident, 10行 casualty 10行vehicle
-//
-def ml = ??? // accident
-def ml2 = ??? // join
->>>>>>> 06fa90b890346b8d5240a09740f0cc0247dd39a8
-
 
     val pipeline_dt = new Pipeline().setStages(Array(assembler, dt))
     val dtmodel = pipeline_dt.fit(training_dt)
