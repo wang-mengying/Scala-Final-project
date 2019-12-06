@@ -71,7 +71,7 @@ object App {
     streamingContext.awaitTermination()
   }
 
-  def regression = {
+  def regression(path:String, labelName: String, featuresArray:Array[String] ) = {
     val spark: SparkSession = SparkSession
       .builder()
       .appName("final")
@@ -82,11 +82,11 @@ object App {
       .read
       .option("header","true")
       .option("inferschema","true")
-      .csv("data/Vehicles.csv")
+      .csv(path)
 
-    var data = df.withColumnRenamed("Age_Band_of_Driver", "label")
+    var data = df.withColumnRenamed(labelName, "label")
 
-    val featuresArray =Array("Sex_of_Driver", "Was_Vehicle_Left_Hand_Drive?", "Driver_IMD_Decile", "Driver_Home_Area_Type", "Driver_IMD_Decile")
+    val featuresArray = featuresArray
     val assembler = new VectorAssembler().setInputCols(featuresArray).setOutputCol("features")
 
     val Array(training_lr, test_lr) = data.randomSplit(Array(0.9, 0.1),12)
