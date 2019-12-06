@@ -50,6 +50,7 @@ object App {
     var joinedTable_test: Dataset[Row] = DataSetGenerator.testSetJoinedGen
     var accident_train: Dataset[Accident] = DataSetGenerator.trainSetAccidentGen
     var accident_test: Dataset[Accident] = DataSetGenerator.testSetAccidentGen
+
     val streamingData: ReceiverInputDStream[String] = streamingContext.socketTextStream("hadoop000", 9999)
     val input: DStream[Serializable] = streamingData.map (data => DataCleaning.parseData(data))
     input.foreachRDD(
