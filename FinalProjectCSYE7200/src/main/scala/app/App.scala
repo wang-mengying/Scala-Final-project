@@ -41,7 +41,7 @@ object App {
 // Streaming Data
     val spark = SparkSessionFactory.getSparkSession
     import spark.implicits._
-    val streamingContext = SparkSessionFactory.getStreamingContext
+    val streamingContext = new StreamingContext(spark.sparkContext,Seconds(5))
     DataSetGenerator.init
     var accidentDS: Dataset[Accident] = DataSetGenerator.accidentDS
     var vehicleDS: Dataset[Vehicle] = DataSetGenerator.vehicleDS
@@ -52,26 +52,22 @@ object App {
     var accident_test: Dataset[Accident] = DataSetGenerator.testSetAccidentGen
     val streamingData: ReceiverInputDStream[String] = streamingContext.socketTextStream("hadoop000", 9999)
     val input: DStream[Serializable] = streamingData.map (data => DataCleaning.parseData(data))
-    var count = 0
     input.foreachRDD(
       strs => {
         val data: Array[Serializable] = strs.collect()
         data.foreach(d => d match {
           case casualty: Casualty => {
             println(casualty)
-            count = count+1
             casualtyDS = casualtyDS.union(Seq(casualty).toDS())
           }
           case accident: Accident => {
             println(accident)
-            count = count+1
             accidentDS = accidentDS.union(Seq(accident).toDS())
           }
           case vehicle: Vehicle => {
             println(vehicle)
-            count = count+1
             vehicleDS = vehicleDS.union(Seq(vehicle).toDS())
-            accidentDS.createOrReplaceGlobalTempView("accident")
+            accidentDS.createOrReplaceTempView("accident")
             val sql = "select accident_index, accident_severity from accident"
             val accident_serverity: DataFrame = spark.sql(sql)
             joinedTable_train = accident_serverity.join(vehicleDS,"accident_index").join(casualtyDS,"accident_index")

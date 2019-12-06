@@ -19,9 +19,4 @@ object SparkSessionFactory {
     spark
   }
 
-  def getStreamingContext:StreamingContext={
-    val streamingContext = new StreamingContext(spark.sparkContext,Seconds(45))
-    streamingContext
-  }
-
 }

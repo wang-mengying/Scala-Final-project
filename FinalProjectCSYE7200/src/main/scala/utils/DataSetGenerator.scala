@@ -16,7 +16,7 @@ object DataSetGenerator {
     this.vehicleDS = DataSetCreation.getVehicleData("in/Vehicles.csv",spark)
     this.accidentDS = DataSetCreation.getAccidentData("in/Accidents.csv",spark)
     this.casualtyDS = DataSetCreation.getCasualtyData("in/Casualties.csv",spark)
-    accidentDS.createGlobalTempView("accident")
+    accidentDS.createOrReplaceTempView("accident")
     val sql = "select accident_index, accident_severity from accident"
     val accident_serverity: DataFrame = spark.sql(sql)
     this.joinedTable = accident_serverity.join(vehicleDS,"accident_index").join(casualtyDS,"accident_index")
