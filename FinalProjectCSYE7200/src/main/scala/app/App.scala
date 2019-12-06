@@ -58,21 +58,18 @@ object App {
         val data: Array[Serializable] = strs.collect()
         data.foreach(d => d match {
           case casualty: Casualty => {
-            println(casualty)
             casualtyDS = casualtyDS.union(Seq(casualty).toDS())
           }
           case accident: Accident => {
-            println(accident)
             accidentDS = accidentDS.union(Seq(accident).toDS())
           }
           case vehicle: Vehicle => {
-            println(vehicle)
             vehicleDS = vehicleDS.union(Seq(vehicle).toDS())
             accidentDS.createOrReplaceTempView("accident")
             val sql = "select accident_index, accident_severity from accident"
             val accident_serverity: DataFrame = spark.sql(sql)
             joinedTable_train = accident_serverity.join(vehicleDS,"accident_index").join(casualtyDS,"accident_index")
-            println(accident_serverity.show(1))
+            accident_serverity.orderBy("accident_index").show(1)
             println("Data Added")
           }
           case _ => println("Data Parsing Failed")
