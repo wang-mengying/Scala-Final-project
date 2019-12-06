@@ -28,5 +28,5 @@ package bean
  */
 case class Vehicle(accident_index:String,vehicle_reference:String,vehicle_type:String,towing_and_articulation:String,vehicle_manoeuvre:String,vehicle_location_restricted_lane:String,
                    junction_location:String,skidding_and_overturning:String,hit_Object_in_carriageway:String,vehicle_leaving_carriageway:String,hit_object_off_carriageway:String,
-                   first_point_of_impact:String,was_vehicle_left_hand_drive:String,journey_purpose_of_driver:String,sex_of_driver:String,age_of_driver:String,age_band_of_driver:String,
-                   engine_capacity:String,propulsion_code:String,age_of_vehicle:String,driver_imd_decile:String,driver_home_area_type:String,vehicle_imd_decile:String)
+                   first_point_of_impact:String,was_vehicle_left_hand_drive:String,journey_purpose_of_driver:String,sex_of_driver:String,age_of_driver:Int,age_band_of_driver:String,
+                   engine_capacity:Int,propulsion_code:String,age_of_vehicle:Int,driver_imd_decile:Int,driver_home_area_type:String,vehicle_imd_decile:String)

@@ -1,14 +1,16 @@
 package app
+import java.io
+
 import org.apache.spark.ml.classification.LogisticRegression
 import bean.{Accident, AccidentCount, Casualty, Vehicle}
 import dao.AccidentDAO
-import data.DataSetCreation
+import data.{DataCleaning, DataSetCreation}
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.{Dataset, SparkSession}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.kafka.KafkaUtils
 import org.apache.spark.streaming.{Seconds, StreamingContext}
-import utils.HBaseUtils
+import utils.{DataSetGenerator, HBaseUtils, SparkSessionFactory, StreamingDataManipulation}
 import org.apache.spark.ml.regression.{LinearRegression, LinearRegressionModel}
 import org.apache.spark.ml.{Pipeline, PipelineModel}
 import org.apache.spark.ml.evaluation.RegressionEvaluator
@@ -24,80 +26,49 @@ import org.apache.spark.streaming.dstream.{DStream, ReceiverInputDStream}
 object App {
   def main(args: Array[String]): Unit = {
     System.setProperty("hadoop.home.dir", "C:\\Program Files\\Hadoop");
-    // Zookeeper host:port, group, kafka topic, threads
+// Zookeeper host:port, group, kafka topic, threads
 //    if (args.length != 4) {
 //      println("Usage: StatStreamingApp <zkQuorum> <group> <topics> <numThreads>")
 //      System.exit(1)
 //    }
-    // spark sql initialization
-    val conf: SparkConf = new SparkConf().setAppName("CSYE7200FinalProject").set("spark.storage.memoryFraction","0.6").set("spark.shuffle.file.buffer","64")
-      .set( "spark.serializer", "org.apache.spark.serializer.KryoSerializer" ).setMaster("local[*]").set("spark.driver.allowMultipleContexts","true")
-    conf.registerKryoClasses(Array(classOf[Accident],classOf[Casualty],classOf[Vehicle],classOf[scala.collection.mutable.WrappedArray.ofRef[_]]))
-    val spark: SparkSession = SparkSession.builder().config(conf).getOrCreate()
-    import spark.implicits._
-    // Data from local system
-    val vehicleDS:Dataset[Vehicle] = DataSetCreation.getVehicleData("in/Vehicles.csv",spark)
-    val accidentDS:Dataset[Accident] = DataSetCreation.getAccidentData("in/Accidents.csv",spark)
-    val casualtyDS:Dataset[Casualty] = DataSetCreation.getCasualtyData("in/Casualties.csv",spark)
-    accidentDS.join(vehicleDS,"accident_Index").join(casualtyDS,"accident_Index")
-    vehicleDS.persist(StorageLevel.MEMORY_AND_DISK_SER)
-    accidentDS.persist(StorageLevel.MEMORY_AND_DISK_SER)
-    casualtyDS.persist(StorageLevel.MEMORY_AND_DISK_SER)
-    // streaming preparation
-//    val Array(zkQuorum, groupId, topics, numThreads) = args
-    val streamingContext = new StreamingContext(spark.sparkContext,Seconds(5))
-//    val topicMap = topics.split(",").map((_, numThreads.toInt)).toMap
-//    val messages = KafkaUtils.createStream(streamingContext, zkQuorum, groupId, topicMap)
-
-    // Streaming Data
+// spark sql initialization
+// streaming preparation
+// val Array(zkQuorum, groupId, topics, numThreads) = args
+// val topicMap = topics.split(",").map((_, numThreads.toInt)).toMap
+// val messages = KafkaUtils.createStream(streamingContext, zkQuorum, groupId, topicMap)
+// Streaming Data
+    val spark = SparkSessionFactory.getSparkSession
+    val streamingContext = SparkSessionFactory.getStreamingContext
+    val joinedTable_train: Dataset[Row] = DataSetGenerator.trainSetJoinedGen
+    val joinedTable_test: Dataset[Row] = DataSetGenerator.testSetJoinedGen
+    val accident_train: Dataset[Accident] = DataSetGenerator.trainSetAccidentGen
+    val accident_test: Dataset[Accident] = DataSetGenerator.testSetAccidentGen
     val streamingData: ReceiverInputDStream[String] = streamingContext.socketTextStream("hadoop000", 9999)
-    // etl
-    val input: DStream[Any] = streamingData.map { str =>
-      str.split(",").length match {
-        case 16 => parseCasualty(str)
-        case 23 => parseVehicle(str)
-        case 32 => parseAccident(str)
-        case _ => "Please check your data"
-      }
-    }
-
-    input.foreachRDD(
-      strs => {
-        val data: Array[Any] = strs.collect()
-        data.foreach(d => d match {
-          case casualty: Casualty => println(casualty)
-          case accident: Accident => println(accident)
-          case vehicle: Vehicle => println(vehicle)
-          case _ => println("Data Parsing Failed")
-        })
-      })
-
-//    casualtyDS.show(5)
-//    vehicleDS.show(5)
-//    accidentDS.show(5)
-
-    // machine learning algo
+    val input: DStream[io.Serializable] = streamingData.map (DataCleaning.parseData(_))
+    StreamingDataManipulation.transform(input)
 
     streamingContext.start()
     streamingContext.awaitTermination()
   }
-  def parseCasualty(str:String) : Casualty ={
-    val data: Array[String] = str.split(",")
-    val res = Casualty(data(0), data(1), data(2), data(3), data(4), data(5), data(6), data(7), data(8), data(9), data(10), data(11), data(12), data(13), data(14), data(15))
-    res
-  }
 
-  def parseAccident(str:String):Accident={
-    val data: Array[String] = str.split(",")
-    val res = Accident(data(0), data(1), data(2), data(3), data(4), data(5), data(6), data(7), data(8), data(9), data(10), data(11), data(12), data(13), data(14), data(15), data(16), data(17), data(18), data(19), data(20), data(21), data(22), data(23), data(24), data(25), data(26), data(27), data(28), data(29), data(30))
-    res
-  }
 
-  def parseVehicle(str:String):Vehicle={
-    val data: Array[String] = str.split(",")
-    val res: Vehicle = Vehicle(data(0), data(1), data(2), data(3), data(4), data(5), data(6), data(7), data(8), data(9), data(10), data(11), data(12), data(13), data(14), data(15), data(16), data(17), data(18), data(19), data(20), data(21), data(22))
-    res
-  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //  def linearregressor = {
 //    Logger.getLogger("org").setLevel(Level.OFF)
 //    Logger.getLogger("akka").setLevel(Level.OFF)

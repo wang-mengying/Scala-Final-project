@@ -19,6 +19,6 @@ package bean
  * @param casualty_home_area_Type
  * @param casualty_imd_decile
  */
-case class Casualty(accident_index:String,vehicle_reference:String,casualty_reference:String,casualty_class:String,sex_of_casualty:String,age_of_casualty:String,
-                    age_band_of_casualty:String,casualty_severity:String,pedestrian_location:String,pedestrian_movement:String,car_passenger:String,bus_or_coach_passenger:String,
-                    pedestrian_road_maintenance_worker:String,casualty_type:String,casualty_home_area_Type:String,casualty_imd_decile:String)
+case class Casualty(accident_index:String,vehicle_reference:String,casualty_reference:String,casualty_class:String,sex_of_casualty:String,age_of_casualty:Int,
+                    age_band_of_casualty:String,casualty_severity:Int,pedestrian_location:String,pedestrian_movement:String,car_passenger:String,bus_or_coach_passenger:String,
+                    pedestrian_road_maintenance_worker:String,casualty_type:String,casualty_home_area_Type:String,casualty_imd_decile:Int)
