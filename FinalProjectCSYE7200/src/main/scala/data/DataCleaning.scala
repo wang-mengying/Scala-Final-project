@@ -4,13 +4,12 @@ import bean.{Accident, Casualty, Vehicle}
 
 object DataCleaning {
 
-  def parseData(str:String)={
+  def parseData(str:String):Serializable={
     val data: Array[String] = str.split(",")
     data.length match {
       case 16 => DataCleaning.parseCasualty(data)
       case 23 => DataCleaning.parseVehicle(data)
       case 32 => DataCleaning.parseAccident(data)
-      case _ => "Please check your data"
     }
   }
 

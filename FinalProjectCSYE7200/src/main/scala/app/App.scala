@@ -10,7 +10,7 @@ import org.apache.spark.sql.{Dataset, SparkSession}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.kafka.KafkaUtils
 import org.apache.spark.streaming.{Seconds, StreamingContext}
-import utils.{DataSetGenerator, HBaseUtils, SparkSessionFactory, StreamingDataManipulation}
+import utils.{DataSetGenerator, HBaseUtils, SparkSessionFactory}
 import org.apache.spark.ml.regression.{LinearRegression, LinearRegressionModel}
 import org.apache.spark.ml.{Pipeline, PipelineModel}
 import org.apache.spark.ml.evaluation.RegressionEvaluator
@@ -23,6 +23,8 @@ import org.apache.log4j.Logger
 import org.apache.log4j.Level
 import org.apache.spark.rdd.RDD
 import org.apache.spark.streaming.dstream.{DStream, ReceiverInputDStream}
+import utils.DataSetGenerator.{accidentDS, casualtyDS, spark, vehicleDS}
+
 object App {
   def main(args: Array[String]): Unit = {
     System.setProperty("hadoop.home.dir", "C:\\Program Files\\Hadoop");
@@ -38,15 +40,47 @@ object App {
 // val messages = KafkaUtils.createStream(streamingContext, zkQuorum, groupId, topicMap)
 // Streaming Data
     val spark = SparkSessionFactory.getSparkSession
+    import spark.implicits._
     val streamingContext = SparkSessionFactory.getStreamingContext
-    val joinedTable_train: Dataset[Row] = DataSetGenerator.trainSetJoinedGen
-    val joinedTable_test: Dataset[Row] = DataSetGenerator.testSetJoinedGen
-    val accident_train: Dataset[Accident] = DataSetGenerator.trainSetAccidentGen
-    val accident_test: Dataset[Accident] = DataSetGenerator.testSetAccidentGen
+    DataSetGenerator.init
+    var accidentDS: Dataset[Accident] = DataSetGenerator.accidentDS
+    var vehicleDS: Dataset[Vehicle] = DataSetGenerator.vehicleDS
+    var casualtyDS = DataSetGenerator.casualtyDS
+    var joinedTable_train: Dataset[Row] = DataSetGenerator.trainSetJoinedGen
+    var joinedTable_test: Dataset[Row] = DataSetGenerator.testSetJoinedGen
+    var accident_train: Dataset[Accident] = DataSetGenerator.trainSetAccidentGen
+    var accident_test: Dataset[Accident] = DataSetGenerator.testSetAccidentGen
     val streamingData: ReceiverInputDStream[String] = streamingContext.socketTextStream("hadoop000", 9999)
-    val input: DStream[io.Serializable] = streamingData.map (DataCleaning.parseData(_))
-    StreamingDataManipulation.transform(input)
-
+    val input: DStream[Serializable] = streamingData.map (data => DataCleaning.parseData(data))
+    var count = 0
+    input.foreachRDD(
+      strs => {
+        val data: Array[Serializable] = strs.collect()
+        data.foreach(d => d match {
+          case casualty: Casualty => {
+            println(casualty)
+            count = count+1
+            casualtyDS = casualtyDS.union(Seq(casualty).toDS())
+          }
+          case accident: Accident => {
+            println(accident)
+            count = count+1
+            accidentDS = accidentDS.union(Seq(accident).toDS())
+          }
+          case vehicle: Vehicle => {
+            println(vehicle)
+            count = count+1
+            vehicleDS = vehicleDS.union(Seq(vehicle).toDS())
+            accidentDS.createOrReplaceGlobalTempView("accident")
+            val sql = "select accident_index, accident_severity from accident"
+            val accident_serverity: DataFrame = spark.sql(sql)
+            joinedTable_train = accident_serverity.join(vehicleDS,"accident_index").join(casualtyDS,"accident_index")
+            println(accident_serverity.show(1))
+            println("Data Added")
+          }
+          case _ => println("Data Parsing Failed")
+        })}
+    )
     streamingContext.start()
     streamingContext.awaitTermination()
   }

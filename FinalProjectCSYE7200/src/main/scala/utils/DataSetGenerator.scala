@@ -7,14 +7,21 @@ import org.apache.spark.storage.StorageLevel
 
 object DataSetGenerator {
   val spark = SparkSessionFactory.getSparkSession
-  val vehicleDS:Dataset[Vehicle] = DataSetCreation.getVehicleData("in/Vehicles.csv",spark)
-  val accidentDS:Dataset[Accident] = DataSetCreation.getAccidentData("in/Accidents.csv",spark)
-  val casualtyDS:Dataset[Casualty] = DataSetCreation.getCasualtyData("in/Casualties.csv",spark)
-  accidentDS.createGlobalTempView("accident")
-  val sql = "select accident_index, accident_severity from accident"
-  val accident_serverity: DataFrame = spark.sql(sql)
-  val joinedTable: DataFrame = accident_serverity.join(vehicleDS,"accident_index").join(casualtyDS,"accident_index")
-  accidentDS.persist(StorageLevel.MEMORY_AND_DISK_SER)
+  var vehicleDS:Dataset[Vehicle] = null
+  var accidentDS:Dataset[Accident] = null
+  var casualtyDS:Dataset[Casualty] = null
+  var joinedTable: DataFrame = null
+
+  def init={
+    this.vehicleDS = DataSetCreation.getVehicleData("in/Vehicles.csv",spark)
+    this.accidentDS = DataSetCreation.getAccidentData("in/Accidents.csv",spark)
+    this.casualtyDS = DataSetCreation.getCasualtyData("in/Casualties.csv",spark)
+    accidentDS.createGlobalTempView("accident")
+    val sql = "select accident_index, accident_severity from accident"
+    val accident_serverity: DataFrame = spark.sql(sql)
+    this.joinedTable = accident_serverity.join(vehicleDS,"accident_index").join(casualtyDS,"accident_index")
+    accidentDS.persist(StorageLevel.MEMORY_AND_DISK_SER)
+  }
 
   def trainSetJoinedGen={
     val trainSetJoined: Dataset[Row] = joinedTable.sample(false,0.75,1L)
